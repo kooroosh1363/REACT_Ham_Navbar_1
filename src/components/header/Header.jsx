@@ -1,30 +1,37 @@
-import React from "react"
-import styled from "./Header.module.css";
+import React, { useState } from "react"
+import  "./Header.css";
 import { Link } from "react-router-dom";
 import { BsMenuButtonWideFill } from "react-icons/bs";
 import { BsXLg } from "react-icons/bs";
 
 function Header(){
-    return(
-        <div className={styled.header}>
 
-            <div className={styled.icon_menu}>
-                <BsMenuButtonWideFill className={styled.icon}/>
+    const[active , setActive]= useState(false)
+
+    const openMenu = ()=>{
+        setActive(!active);
+    }
+
+    return(
+        <div className="header">
+
+            <div className="icon_menu">
+                <BsMenuButtonWideFill className="icon" onClick={openMenu}/>
             </div>
 
-            <nav>
+            <nav className={active ? 'slide active' : 'slide'}>
                 <ul>
                     
-                    <div className={styled.closed}>
-                        <BsXLg className={styled.close}/>
+                    <div className="closed">
+                        <BsXLg className="close" onClick={openMenu}/>
                     </div>
 
-                    <li><Link to="/">HOME</Link></li>
+                    <li><Link to="/home">HOME</Link></li>
                     <li><Link to="/">ABOUT</Link></li>
                     <li><Link to="/">PRODUCT</Link></li>
                     <li><Link to="/">CONTACT</Link></li>
                     <li><Link to="/">BLOG</Link></li>
-                    <li><Link to="/">LOG IN</Link></li>
+                    <li className="btn"><Link to="/">LOG IN</Link></li>
                 </ul>
             </nav>
         </div>

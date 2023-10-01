@@ -1,14 +1,11 @@
-import Header from "../../components/header/Header";
+// import Header from "../../components/header/Header";
 
 
 
 function Home() {
     return (
       <div  >
-        <Header/>
-        
-  
-        
+        {/* <Header/> */}
       </div>
     );
   }
