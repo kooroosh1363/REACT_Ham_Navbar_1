@@ -1,70 +1,179 @@
-# Getting Started with Create React App
+# HINGE — Accessible Navigation State Lab
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+HINGE modernizes a 2023 React hamburger-navbar exercise into a focused responsive-navigation engineering demo.
 
-## Available Scripts
+The original repository had a visually working mobile menu, but the implementation was driven by one boolean and CSS movement. It also included clickable SVG icons instead of buttons, no ARIA state, no Escape handling, no focus management, no scroll locking, mostly fake routes, an unused router setup, Create React App boilerplate, and a 3 MB background image for a navigation demo.
 
-In the project directory, you can run:
+## Engineering focus
 
-### `npm start`
+HINGE treats responsive navigation as a small state machine with an accessibility contract:
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- semantic menu and close buttons
+- explicit `aria-expanded` / `aria-controls`
+- mobile drawer focus entry and focus return
+- Tab / Shift+Tab focus containment
+- Escape-to-close
+- backdrop-to-close
+- close-on-navigation
+- close-on-desktop-resize
+- background scroll locking
+- real same-page anchors instead of fake routes
+- reducer-driven state transitions
+- testable viewport and focus-wrap policies
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Architecture
 
-### `npm test`
+```text
+src/data/navigation.js
+        │
+        ▼
+src/lib/navigationState.js
+        ├─ hash normalization
+        ├─ initial state
+        ├─ reducer events
+        ├─ desktop breakpoint policy
+        └─ focus wrap calculation
+        │
+        ▼
+src/App.jsx
+        ├─ semantic navigation markup
+        ├─ focus lifecycle
+        ├─ Escape / Tab keyboard handling
+        ├─ viewport synchronization
+        └─ hash navigation
+        │
+        ▼
+Responsive static frontend
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## State model
 
-### `npm run build`
+The reducer accepts these events:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- `TOGGLE`
+- `OPEN`
+- `CLOSE`
+- `ESCAPE`
+- `NAVIGATE`
+- `VIEWPORT_DESKTOP`
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+This keeps behavior explicit and removes scattered menu-state mutations.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Accessibility contract
 
-### `npm run eject`
+When the mobile menu opens:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+1. background scrolling is locked
+2. focus moves into the drawer
+3. Tab and Shift+Tab remain inside the drawer
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+When it closes:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+1. the drawer leaves the interaction path
+2. scroll locking is removed
+3. focus returns to the menu trigger
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+The menu also closes on Escape, backdrop activation, navigation, and switching to desktop width.
 
-## Learn More
+## What changed
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Tooling
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- Create React App → Vite
+- React 18 → React 19
+- removed React Router because the demo has no multi-page routing requirement
+- removed React Icons by using tiny inline SVGs
+- removed CRA testing boilerplate and Web Vitals
 
-### Code Splitting
+### UX / content
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+- replaced fake HOME / ABOUT / PRODUCT / CONTACT / BLOG / LOG IN routes
+- added real same-page sections
+- added visible active-location state
+- added honest scope text
+- added responsive layout and reduced-motion handling
 
-### Analyzing the Bundle Size
+### Performance cleanup
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+The original `src/image/back.png` was approximately 3.08 MB and only served as a decorative full-screen background. It was removed together with unused CRA public assets and the old CRA lockfile.
 
-### Making a Progressive Web App
+HINGE now uses CSS-only presentation and has no image payload.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Local development
 
-### Advanced Configuration
+Requirements:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- Node.js 22+
+- npm
 
-### Deployment
+```bash
+npm install --legacy-peer-deps --no-audit --no-fund
+npm run dev
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+The install flag avoids the npm 10 Arborist resolver crash currently observable on GitHub-hosted Node 22 runners. It is a package-manager workaround, not an application runtime requirement.
 
-### `npm run build` fails to minify
+## Tests
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```bash
+npm test
+```
+
+The Vitest suite covers:
+
+- valid hash normalization
+- invalid hash recovery
+- empty navigation models
+- initial state creation
+- toggle behavior
+- explicit open behavior
+- Escape close
+- desktop viewport close
+- navigate-and-close behavior
+- breakpoint boundary detection
+- invalid viewport input
+- forward focus wrapping
+- backward focus wrapping
+- zero-focusable-element handling
+
+## Quality gate
+
+```bash
+npm run check
+```
+
+Runs syntax checks, all tests, and a Vite production build.
+
+## CI
+
+`.github/workflows/quality.yml` runs the quality gate on pull requests and pushes to `main`.
+
+## Deployment
+
+HINGE is a static frontend and includes a manual GitHub Pages workflow.
+
+1. Open **Settings → Pages**.
+2. Set **Source** to **GitHub Actions**.
+3. Open **Actions → Deploy Pages**.
+4. Run the workflow.
+
+## Security review
+
+No API keys, tokens, passwords, credentials, backend endpoints, user HTML injection, auth assumptions, payment behavior, or sensitive browser storage are required.
+
+## Scope and limitations
+
+HINGE intentionally does not implement:
+
+- authentication
+- multi-page routing
+- server-side navigation state
+- analytics
+- remote content
+- user accounts
+
+The goal is trustworthy responsive navigation behavior, not feature volume.
+
+## License
+
+MIT. See [LICENSE](./LICENSE).
